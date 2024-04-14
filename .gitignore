@@ -1,0 +1,10 @@
+#OSX Specific Files
+DS_STORE
+__MACOSX
+
+#Jetbrains Files
+.idea
+
+#Intermediate Files
+obj
+bin
