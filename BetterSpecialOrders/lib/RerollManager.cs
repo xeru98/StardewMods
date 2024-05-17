@@ -12,18 +12,18 @@ namespace BetterSpecialOrders;
 public class RerollManager
 {
 
-    private static RerollManager _instance = null;
+    private static RerollManager? _instance;
     public ModConfig config;
     
     // Game State
-    public IDictionary<string, BoardConfig> localBoardConfigs = new Dictionary<string, BoardConfig>();
-    public IDictionary<string, int> localRerollsRemaining = new Dictionary<string, int>();
-    public NetStringDictionary<BoardConfig, NetRef<BoardConfig>> boardConfigs = new NetStringDictionary<BoardConfig, NetRef<BoardConfig>>();
-    public NetStringDictionary<int, NetInt> rerollsRemaining = new NetStringDictionary<int, NetInt>();
-    public int rerollsToday = 0;
+    public IDictionary<string, BoardConfig> LocalBoardConfigs = new Dictionary<string, BoardConfig>();
+    public IDictionary<string, int> LocalRerollsRemaining = new Dictionary<string, int>();
+    public NetStringDictionary<BoardConfig, NetRef<BoardConfig>> BoardConfigs = new NetStringDictionary<BoardConfig, NetRef<BoardConfig>>();
+    private readonly NetStringDictionary<int, NetInt> _rerollsRemaining = new NetStringDictionary<int, NetInt>();
+    private int _rerollsToday = 0;
     
     // cache for overriding the Monday reroll if necessary
-    public List<SpecialOrder> lastAvailableSpecialOrders;
+    private readonly List<SpecialOrder> _lastAvailableSpecialOrders;
 
     
     // Singleton Pattern
@@ -40,14 +40,14 @@ public class RerollManager
     private RerollManager()
     {
         // Load Settings from the Mod Config
-        config = ModEntry.GHelper.ReadConfig<ModConfig>();
+        config = ModEntry.GHelper!.ReadConfig<ModConfig>();
         //use the config to rebuild the state;
-        localBoardConfigs = LoadBoardConfigs();
-        localRerollsRemaining = LoadDefaultRerollsRemaining();
+        LocalBoardConfigs = LoadBoardConfigs();
+        LocalRerollsRemaining = LoadDefaultRerollsRemaining();
         
         RebuildConfig();
         
-        lastAvailableSpecialOrders = new List<SpecialOrder>(); // create this to avoid null issue
+        _lastAvailableSpecialOrders = new List<SpecialOrder>(); // create this to avoid null issue
     }
     
     #region REROLLS
@@ -63,13 +63,13 @@ public class RerollManager
     public bool CanReroll(string orderType)
     {
         // if we can't reroll then we can't reroll... duh
-        if (!boardConfigs[orderType].canReroll.Get())
+        if (!BoardConfigs[orderType].canReroll.Get())
         {
             return false;
         }
         
         // if there are no rerolls left and we don't have unlimited
-        if (rerollsRemaining[orderType] <= 0 && !boardConfigs[orderType].infiniteRerolls.Get())
+        if (_rerollsRemaining[orderType] <= 0 && !BoardConfigs[orderType].infiniteRerolls.Get())
         {
             return false;
         }
@@ -98,7 +98,7 @@ public class RerollManager
         // if we aren't the main player then send a reroll request to the main player
         if (!Context.IsMainPlayer)
         {
-            ModEntry.GHelper.Multiplayer.SendMessage(
+            ModEntry.GHelper!.Multiplayer.SendMessage(
                 new RequestReroll(orderType), 
                 Constants.REQUEST_REROLL, 
                 modIDs: new []{ModEntry.ModID}, 
@@ -110,12 +110,12 @@ public class RerollManager
         //handle actual reroll logic
         if (!CanReroll(orderType))
         {
-            ModEntry.GMonitor.Log("Cannot Reroll Order Type");
+            ModEntry.GMonitor!.Log("Cannot Reroll Order Type");
             return;
         }
         
-        ModEntry.GMonitor.Log($"Rerolling {orderType}");
-        rerollsToday += 1; // do this first to avoid getting the same options on the first reroll of the day
+        ModEntry.GMonitor!.Log($"Rerolling {orderType}");
+        _rerollsToday += 1; // do this first to avoid getting the same options on the first reroll of the day
         SpecialOrder.RemoveAllSpecialOrders(orderType);
         List<string> keyQueue = new List<string>();
         foreach (KeyValuePair<string, SpecialOrderData> pair in DataLoader.SpecialOrders(Game1.content))
@@ -128,10 +128,10 @@ public class RerollManager
         List<string> keysIncludingCompleted = new List<string>(keyQueue);
         if (orderType == "")
         {
-            keyQueue.RemoveAll((string id) => Game1.player.team.completedSpecialOrders.Contains(id));
+            keyQueue.RemoveAll(id => Game1.player.team.completedSpecialOrders.Contains(id));
         }
 
-        Random r = Utility.CreateRandom(Game1.uniqueIDForThisGame, (double)Game1.stats.DaysPlayed * 1.3, rerollsToday);
+        Random r = Utility.CreateRandom(Game1.uniqueIDForThisGame, Game1.stats.DaysPlayed * 1.3, _rerollsToday);
         
         // if the user wants true random then scrub and start over
         if (config.useTrueRandom)
@@ -159,7 +159,7 @@ public class RerollManager
         }
         
         // after reroll complete subtract from available rerolls and notify clients of update to available orders
-        rerollsRemaining[orderType] -= 1;
+        _rerollsRemaining[orderType] -= 1;
         
     }
     
@@ -175,20 +175,20 @@ public class RerollManager
 
         if (resetDayTotal)
         {
-            rerollsToday = 0;
+            _rerollsToday = 0;
         }
 
         if (orderType == Constants.ALL)
         {
             // support custom board types
-            foreach (BoardConfig board in boardConfigs.Values)
+            foreach (BoardConfig board in BoardConfigs.Values)
             {
-                rerollsRemaining[orderType] = board.maxRerolls.Get();
+                _rerollsRemaining[orderType] = board.maxRerolls.Get();
             }
         }
         else
         {
-            rerollsRemaining[orderType] = boardConfigs[orderType].maxRerolls.Get();
+            _rerollsRemaining[orderType] = BoardConfigs[orderType].maxRerolls.Get();
         }
     }
     
@@ -199,8 +199,8 @@ public class RerollManager
     // Rebuild the config settings from the config file
     public void RebuildConfig()
     {
-        boardConfigs.Set(LoadBoardConfigs());
-        rerollsRemaining.Set(LoadDefaultRerollsRemaining());
+        BoardConfigs.Set(LoadBoardConfigs());
+        _rerollsRemaining.Set(LoadDefaultRerollsRemaining());
     }
     
     private IDictionary<string, BoardConfig> LoadBoardConfigs()
@@ -231,7 +231,7 @@ public class RerollManager
                     config.de_allowReroll,
                     config.de_infiniteReroll,
                     config.de_maxRerollCount,
-                    new bool[7] {true, true, true, true, true, true, true}
+                    new [] {true, true, true, true, true, true, true}
                 )
             }
         };
@@ -257,11 +257,11 @@ public class RerollManager
         // Clears only the requested type from the cache
         if (orderType == Constants.ALL)
         {
-            lastAvailableSpecialOrders.Clear();
+            _lastAvailableSpecialOrders.Clear();
         }
         else
         {
-            lastAvailableSpecialOrders.RemoveAll(order => order.orderType == orderType);
+            _lastAvailableSpecialOrders.RemoveAll(order => order.orderType.Get() == orderType);
         }
         
         // Add the selected order type from the current list to the cache
@@ -269,7 +269,7 @@ public class RerollManager
         {
             if (orderType == Constants.ALL || orderType == order.orderType.Get())
             {
-                lastAvailableSpecialOrders.Add(order);
+                _lastAvailableSpecialOrders.Add(order);
             }
         }
     }
@@ -277,7 +277,7 @@ public class RerollManager
     // Loads the requested orderType from the cache
     public void ReloadSpecialOrdersFromCache(string orderType = Constants.ALL)
     {
-        ModEntry.GMonitor.Log("Running Reload");
+        ModEntry.GMonitor!.Log("Running Reload");
         // remove the current orders that match the type
         if (orderType == Constants.ALL)
         {
@@ -285,11 +285,11 @@ public class RerollManager
         }
         else
         {
-            Game1.player.team.availableSpecialOrders.RemoveWhere(order => order.orderType == orderType);
+            Game1.player.team.availableSpecialOrders.RemoveWhere(order => order.orderType.Get() == orderType);
         }
 
         // reload from the cache
-        foreach (SpecialOrder order in lastAvailableSpecialOrders)
+        foreach (SpecialOrder order in _lastAvailableSpecialOrders)
         {
             if (orderType == Constants.ALL || orderType == order.orderType.Get())
             {

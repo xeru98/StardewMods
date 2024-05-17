@@ -27,7 +27,7 @@ public class BetterSpecialOrdersBoard : SpecialOrdersBoard
                 rightNeighborID = -99998,
                 upNeighborID = -99998,
                 downNeighborID = -99998,
-                visible = RerollManager.Get().boardConfigs[orderType].canReroll.Get()
+                visible = RerollManager.Get().BoardConfigs[orderType].canReroll.Get()
             };
         
         // Run this just in case we created a new SpecialOrdersBoard and need to update defaults
@@ -90,7 +90,7 @@ public class BetterSpecialOrdersBoard : SpecialOrdersBoard
         base.UpdateButtons();
         if (rerollButton != null)
         {
-            rerollButton.visible = RerollManager.Get().boardConfigs[GetOrderType()].canReroll.Value;
+            rerollButton.visible = RerollManager.Get().BoardConfigs[GetOrderType()].canReroll.Value;
         }
     }
 

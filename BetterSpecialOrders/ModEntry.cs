@@ -128,7 +128,7 @@ public class ModEntry : Mod
         if (args.NewMenu is SpecialOrdersBoard)
         {
             Monitor.Log("New Menu is a special orders board... replacing with custom one", LogLevel.Debug);
-            string orderType = (args.NewMenu as SpecialOrdersBoard).GetOrderType();
+            string orderType = (args.NewMenu as SpecialOrdersBoard)!.GetOrderType();
             Game1.activeClickableMenu = new BetterSpecialOrdersBoard(orderType);
         }
     }
