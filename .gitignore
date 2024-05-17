@@ -5,6 +5,10 @@ __MACOSX
 #Jetbrains Files
 .idea
 
+#VS Files
+.vsconfig
+*.DotSettings.user
+
 #Intermediate Files
 obj
 bin
