@@ -129,7 +129,13 @@ public class ModEntry : Mod
         {
             Monitor.Log("New Menu is a special orders board... replacing with custom one", LogLevel.Debug);
             string orderType = (args.NewMenu as SpecialOrdersBoard).GetOrderType();
-            Game1.activeClickableMenu = new BetterSpecialOrdersBoard(orderType);
+            Game1.activeClickableMenu = new BetterSpecialOrdersBoard(orderType)
+            {
+                behaviorBeforeCleanup = delegate
+                {
+                    Game1.player.team.ordersBoardMutex.ReleaseLock();
+                }
+            };
         }
     }
 
