@@ -71,16 +71,16 @@ public class RerollManager
      *  rerolls left or if we have infinite rerolls
      *  enabled
      */
-    public bool CanReroll(string orderType)
+    public bool CanReroll(string boardKey)
     {
         // if we can't reroll then we can't reroll... duh
-        if (!BoardConfigs[orderType].AllowReroll)
+        if (!BoardConfigs[boardKey].AllowReroll)
         {
             return false;
         }
         
         // if there are no rerolls left and we don't have unlimited
-        if (RerollsRemaining[orderType] <= 0 && !BoardConfigs[orderType].InfiniteRerolls)
+        if (RerollsRemaining[boardKey] <= 0 && !BoardConfigs[boardKey].InfiniteRerolls)
         {
             return false;
         }
@@ -117,15 +117,22 @@ public class RerollManager
             );
             return;
         }
-        
+
+        string boardKey = orderType;
+
+        // in the event we can't find the board key we just use the custom settings
+        if (!BoardConfigs.ContainsKey(boardKey))
+        {
+            boardKey = "custom";
+        }
         //handle actual reroll logic
-        if (!CanReroll(orderType))
+        if (!CanReroll(boardKey))
         {
             ModEntry.GMonitor!.Log("Cannot Reroll Order Type");
             return;
         }
         
-        ModEntry.GMonitor!.Log($"Rerolling {orderType}");
+        ModEntry.GMonitor!.Log($"Rerolling Board: {boardKey} OrderType: {orderType}");
         _rerollsToday += 1; // do this first to avoid getting the same options on the first reroll of the day
         SpecialOrder.RemoveAllSpecialOrders(orderType);
         List<string> keyQueue = new List<string>();
@@ -170,7 +177,7 @@ public class RerollManager
         }
         
         // after reroll complete subtract from available rerolls and notify clients of update to available orders
-        RerollsRemaining[orderType] -= 1;
+        RerollsRemaining[boardKey] -= 1;
         
     }
     
@@ -183,7 +190,7 @@ public class RerollManager
         {
             return;
         }
-        ModEntry.GMonitor.Log("Resetting daily rerolls");
+        ModEntry.GMonitor.Log("Resetting rerolls back to max values");
 
         if (resetDayTotal)
         {
@@ -217,46 +224,26 @@ public class RerollManager
     
     private Dictionary<string, BoardConfig> LoadBoardConfigs()
     {
-        return new Dictionary<string, BoardConfig>()
+        // when these are loaded from the FS we are using the ordertype as the new key
+        Dictionary<string, BoardConfig> loadedBoardConfigs = new Dictionary<string, BoardConfig>();
+        foreach (BoardConfig boardConfig in config.BoardConfigs.Values)
         {
-            {
-                Constants.SVBoardContext, new BoardConfig(
-                    Constants.SVBoardContext,
-                    config.sv_allowReroll,
-                    config.sv_infiniteReroll,
-                    config.sv_maxRerollCount,
-                    config.sv_refresh_schedule
-                )
-            },
-            {
-                Constants.QiBoardContext, new BoardConfig(
-                    Constants.QiBoardContext,
-                    config.qi_allowReroll,
-                    config.qi_infiniteReroll,
-                    config.qi_maxRerollCount,
-                    config.qi_refresh_schedule
-                )
-            },
-            {
-                Constants.DesertBoardContext, new BoardConfig(
-                    Constants.DesertBoardContext,
-                    config.de_allowReroll,
-                    config.de_infiniteReroll,
-                    config.de_maxRerollCount,
-                    new [] {true, true, true, true, true, true, true}
-                )
-            }
-        };
+            loadedBoardConfigs.Add(boardConfig.OrderType, boardConfig);
+        }
+
+        return loadedBoardConfigs;
     }
 
     private Dictionary<string, int> LoadDefaultRerollsRemaining()
     {
-        return new Dictionary<string, int>()
+        // when these are loaded from the FS we are using the ordertype as the new key
+        Dictionary<string, int> loadedRerollsRemaining = new Dictionary<string, int>();
+        foreach (BoardConfig boardConfig in config.BoardConfigs.Values)
         {
-            { Constants.SVBoardContext, config.sv_maxRerollCount },
-            { Constants.QiBoardContext, config.qi_maxRerollCount },
-            { Constants.DesertBoardContext, config.de_maxRerollCount }
-        };
+            loadedRerollsRemaining.Add(boardConfig.OrderType, boardConfig.MaxRerolls);
+        }
+
+        return loadedRerollsRemaining;
     }
     
     #endregion

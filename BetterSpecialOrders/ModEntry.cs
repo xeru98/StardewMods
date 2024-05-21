@@ -1,6 +1,5 @@
 ﻿using BetterSpecialOrders.Messages;
 using BetterSpecialOrders.Menus;
-using GenericModConfigMenu;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -23,13 +22,19 @@ public class ModEntry : Mod
         set { RerollManager.Get().config = value;  }
     }
     
+    /* #TODO
+     * 1) test menu options
+     * 2) test reroll
+     * 3) add multiplayer replication messages
+     * 4) test ridgeside compatibility
+     */
     
     public override void Entry(IModHelper helper)
     {
         GHelper = helper;
         GMonitor = Monitor;
         GManifest = ModManifest;
-        ModID = this.ModManifest.UniqueID;
+        ModID = ModManifest.UniqueID;
         RerollManager.Get(); // init the game state since the monitor and helper now exist
 
         // hook up events
@@ -74,30 +79,21 @@ public class ModEntry : Mod
         
         // use this over Game1.Date.DayOfWeek because that returns an enum
         int dayOfTheWeek = Game1.Date.DayOfMonth % 7;
-        
-        // stardew valley board
-        if (config.sv_refresh_schedule[dayOfTheWeek])
+
+        foreach (BoardConfig boardConfig in config.BoardConfigs.Values)
         {
-            Monitor.Log("SOD Reroll: SV");
-            RerollManager.Get().Reroll(Constants.SVBoardContext);
+            if (boardConfig.shouldRefreshToday(dayOfTheWeek))
+            {
+                Monitor.Log($"Daily Refresh: {boardConfig.OrderType}");
+                RerollManager.Get().Reroll(Constants.SVBoardContext);
+            }
+            else
+            {
+                Monitor.Log($"Daily Refresh... loading from cache: {boardConfig.OrderType}");
+                RerollManager.Get().ReloadSpecialOrdersFromCache(Constants.SVBoardContext);
+            }
         }
-        else
-        {
-            Monitor.Log("No SOD Reroll: SV");
-            RerollManager.Get().ReloadSpecialOrdersFromCache(Constants.SVBoardContext);
-        }
-        
-        // qi board
-        if (config.qi_refresh_schedule[dayOfTheWeek])
-        {
-            Monitor.Log("SOD Reroll: Qi");
-            RerollManager.Get().Reroll(Constants.QiBoardContext);
-        }
-        else
-        {
-            Monitor.Log("No SOD Reroll: Qi");
-            RerollManager.Get().ReloadSpecialOrdersFromCache(Constants.QiBoardContext);
-        }
+
         
         // Reset the daily rerolls
         RerollManager.Get().ResetRerolls(resetDayTotal: true);
@@ -157,363 +153,12 @@ public class ModEntry : Mod
         }
     }
 
-    private static void OnGMCMUpdated()
+    public static void OnGMCMFieldChanged(string fieldId, object newValue)
     {
         if (Context.IsMainPlayer)
         {
             GMonitor.Log("Main Player updated Config. Rebuilding board configs");
             RerollManager.Get().RebuildConfig();
         }
-    }
-
-    // sets up the GMCM
-    private void SetupGMCM()
-    {
-        IGenericModConfigMenuApi? GMCM_API = Helper.ModRegistry.GetApi<GenericModConfigMenu.IGenericModConfigMenuApi>("spacechase0.GenericModConfigMenu");
-        if (GMCM_API == null)
-        {
-            Monitor.Log("Generic Mod Config Menu not found. Skipping mod menu setup", LogLevel.Info);
-            return;
-        }
-        
-        GMCM_API.Register(mod: ModManifest, reset: () => config = new ModConfig(), save: () => Helper.WriteConfig(config));
-
-        RerollScheduleOption opt = new RerollScheduleOption(
-            getValue: () => config.sv_refresh_schedule,
-            setValue: (value) => config.sv_refresh_schedule = value
-        );
-
-        GMCM_API.AddComplexOption(
-            mod: ModManifest,
-            name: () => "Schedule",
-            draw: opt.Draw,
-            height: () => opt.height,
-            beforeMenuOpened: opt.Reset,
-            beforeSave: opt.SaveChanges,
-            afterReset: opt.Reset
-        );
-
-        /*
-        // GENERAL
-        GMCM_API.AddSectionTitle(
-            mod: ModManifest,
-            text: () => "General Settings"
-        );
-
-        GMCM_API.AddParagraph(
-            mod: ModManifest,
-            text: () => "All of these settings only need to be set by the host. All joining farmers will use the host's settings"
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Use unseeded random generator",
-            tooltip: () => "When unchecked, randomizer will use seeded pseudorandom generator. When checked will use unseeded random generator.",
-            getValue: () => config.useTrueRandom,
-            setValue: value =>
-            {
-                config.useTrueRandom = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddKeybindList(
-            mod: ModManifest,
-            name: () => "Reroll Reset Keybind",
-            tooltip: () => "Allows the host to reset the number of available rerolls back to their max amount",
-            getValue: () => config.resetRerollsKeybind,
-            setValue: value =>
-            {
-                config.resetRerollsKeybind = value;
-                OnGMCMUpdated();
-            }
-        );
-
-
-        // SV
-        GMCM_API.AddSectionTitle(
-            mod: ModManifest,
-            text: () => "Stardew Valley Special Orders Board"
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Allow Rerolls",
-            tooltip: () => "When checked, allows the Stardew Valley Special Orders Board to be rerolled",
-            getValue: () => config.sv_allowReroll,
-            setValue: value =>
-            {
-                config.sv_allowReroll = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Infinite Rerolls",
-            tooltip: () => "When checked, allows the Stardew Valley Special Orders Board to be rerolled infinitely",
-            getValue: () => config.sv_infiniteReroll,
-            setValue: value =>
-            {
-                config.sv_infiniteReroll = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddNumberOption(
-            mod: ModManifest,
-            name: () => "Max Daily Rerolls",
-            tooltip: () => "The number of daily rerolls the team has shared across them per day for use on the Stardew Valley Special Orders Board",
-            getValue: () => config.sv_maxRerollCount,
-            setValue: value =>
-            {
-                config.sv_maxRerollCount = value;
-                OnGMCMUpdated();
-            },
-            min: 1,
-            max: 10
-        );
-
-        GMCM_API.AddParagraph(
-            mod: ModManifest,
-            text: () => "Refresh Schedule"
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Monday",
-            getValue: () => config.sv_refresh_schedule[0],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[0] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Tuesday",
-            getValue: () => config.sv_refresh_schedule[1],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[1] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Wednesday",
-            getValue: () => config.sv_refresh_schedule[2],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[2] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Thursday",
-            getValue: () => config.sv_refresh_schedule[3],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[3] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Friday",
-            getValue: () => config.sv_refresh_schedule[4],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[4] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Saturday",
-            getValue: () => config.sv_refresh_schedule[5],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[5] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Sunday",
-            getValue: () => config.sv_refresh_schedule[6],
-            setValue: value =>
-            {
-                config.sv_refresh_schedule[6] = value;
-                OnGMCMUpdated();
-            }
-        );
-
-
-        // Qi
-        GMCM_API.AddSectionTitle(
-            mod: ModManifest,
-            text: () => "Mr. Qi Special Orders Board"
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Allow Rerolls",
-            tooltip: () => "When checked, allows the Mr. Qi Special Orders Board to be rerolled",
-            getValue: () => config.qi_allowReroll,
-            setValue: value =>
-            {
-                config.qi_allowReroll = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Infinite Rerolls",
-            tooltip: () => "When checked, allows the Mr. Qi Special Orders Board to be rerolled infinitely",
-            getValue: () => config.qi_infiniteReroll,
-            setValue: value =>
-            {
-                config.qi_infiniteReroll = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddNumberOption(
-            mod: ModManifest,
-            name: () => "Max Daily Rerolls",
-            tooltip: () => "The number of daily rerolls the team has shared across them per day for use on Mr. Qi's Special Order Board",
-            getValue: () => config.qi_maxRerollCount,
-            setValue: value =>
-            {
-                config.qi_maxRerollCount = value;
-                OnGMCMUpdated();
-            },
-            min: 1,
-            max: 10
-        );
-
-        GMCM_API.AddParagraph(
-            mod: ModManifest,
-            text: () => "Refresh Schedule"
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Monday",
-            getValue: () => config.qi_refresh_schedule[0],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[0] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Tuesday",
-            getValue: () => config.qi_refresh_schedule[1],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[1] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Wednesday",
-            getValue: () => config.qi_refresh_schedule[2],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[2] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Thursday",
-            getValue: () => config.qi_refresh_schedule[3],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[3] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Friday",
-            getValue: () => config.qi_refresh_schedule[4],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[4] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Saturday",
-            getValue: () => config.qi_refresh_schedule[5],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[5] = value;
-                OnGMCMUpdated();
-            }
-        );
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Sunday",
-            getValue: () => config.qi_refresh_schedule[6],
-            setValue: value =>
-            {
-                config.qi_refresh_schedule[6] = value;
-                OnGMCMUpdated();
-            }
-        );
-
-
-        // Desert Event
-        GMCM_API.AddSectionTitle(
-            mod: ModManifest,
-            text: () => "Desert Festival Special Orders Board"
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Allow Rerolls",
-            tooltip: () => "When checked, allows the Desert Festival Special Orders Board to be rerolled",
-            getValue: () => config.de_allowReroll,
-            setValue: value =>
-            {
-                config.de_allowReroll = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddBoolOption(
-            mod: ModManifest,
-            name: () => "Infinite Rerolls",
-            tooltip: () => "When checked, allows the Desert Festival Special Orders Board to be rerolled infinitely",
-            getValue: () => config.de_infiniteReroll,
-            setValue: value =>
-            {
-                config.de_infiniteReroll = value;
-                OnGMCMUpdated();
-            }
-        );
-
-        GMCM_API.AddNumberOption(
-            mod: ModManifest,
-            name: () => "Max Daily Rerolls",
-            tooltip: () => "The number of daily rerolls the team has shared across them per day for use on Desert Festival Special Order Board",
-            getValue: () => config.de_maxRerollCount,
-            setValue: value =>
-            {
-                config.de_maxRerollCount = value;
-                OnGMCMUpdated();
-            },
-            min: 1,
-            max: 10
-        );*/
     }
 }

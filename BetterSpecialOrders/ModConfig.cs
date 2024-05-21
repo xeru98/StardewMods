@@ -9,5 +9,7 @@ public class ModConfig
 
     public bool useTrueRandom = false;
 
-    public Dictionary<string, BoardConfig> BoardConfigs;
+    public bool forceUniqueIfPossible = true; //unsupported
+
+    public Dictionary<string, BoardConfig> BoardConfigs = new Dictionary<string, BoardConfig>();
 }

@@ -4,13 +4,11 @@ namespace BetterSpecialOrders;
 
 public class BoardConfig
 {
-    public string OrderType = new NetString("");
-    public bool  AllowReroll = new NetBool(false);
-    public bool InfiniteRerolls = new NetBool(false);
-    public int MaxRerolls = new NetInt(0);
+    public string OrderType = "";
+    public bool  AllowReroll = false;
+    public bool InfiniteRerolls = false;
+    public int MaxRerolls = 0;
     public bool[] RefreshSchedule = new bool[7];
-
-    public NetFields NetFields { get; } = new NetFields("BetterSpecialOrders.BoardConfig");
 
     public BoardConfig()
     {
