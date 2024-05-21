@@ -1,16 +1,10 @@
-﻿using System.Collections.ObjectModel;
-using BetterSpecialOrders.Messages;
-using BetterSpecialOrders.UI;
+﻿using BetterSpecialOrders.Messages;
+using BetterSpecialOrders.Menus;
 using GenericModConfigMenu;
-using Microsoft.Xna.Framework;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
-using StardewValley.Extensions;
-using StardewValley.GameData.SpecialOrders;
 using StardewValley.Menus;
-using StardewValley.Mods;
-using StardewValley.SpecialOrders;
 
 namespace BetterSpecialOrders;
 
@@ -19,6 +13,7 @@ public class ModEntry : Mod
 
     public static IModHelper? GHelper;
     public static IMonitor? GMonitor;
+    public static IManifest? GManifest;
 
     public static string ModID = "";
 
@@ -33,6 +28,7 @@ public class ModEntry : Mod
     {
         GHelper = helper;
         GMonitor = Monitor;
+        GManifest = ModManifest;
         ModID = this.ModManifest.UniqueID;
         RerollManager.Get(); // init the game state since the monitor and helper now exist
 
@@ -40,15 +36,23 @@ public class ModEntry : Mod
         helper.Events.GameLoop.GameLaunched += Lifecycle_OnGameLaunch;
         helper.Events.GameLoop.DayEnding += Lifecycle_OnDayEnd;
         helper.Events.GameLoop.DayStarted += Lifecycle_OnDayStart;
+        helper.Events.GameLoop.UpdateTicked += Lifecycle_OnUpdateTicked;
         helper.Events.Input.ButtonsChanged += Input_OnButtonsChanged;
         helper.Events.Display.MenuChanged += Display_OnMenuChanged;
         helper.Events.Multiplayer.ModMessageReceived += Multiplayer_OnMessageRecieved;
+        
+        Monitor.Log("Mod Loaded");
     }
     
     // Called when the game is launched and sets up the GMCM integration if found
     internal void Lifecycle_OnGameLaunch(object? sender, GameLaunchedEventArgs args)
     {
-        SetupGMCM();
+        GMCMHelpers.SetupGMCM();
+    }
+
+    internal void Lifecycle_OnUpdateTicked(object? sender, UpdateTickedEventArgs args)
+    {
+        RerollManager.Get().Tick();
     }
     
     internal void Lifecycle_OnDayEnd(object? sendex, DayEndingEventArgs args)
@@ -74,20 +78,24 @@ public class ModEntry : Mod
         // stardew valley board
         if (config.sv_refresh_schedule[dayOfTheWeek])
         {
+            Monitor.Log("SOD Reroll: SV");
             RerollManager.Get().Reroll(Constants.SVBoardContext);
         }
         else
         {
+            Monitor.Log("No SOD Reroll: SV");
             RerollManager.Get().ReloadSpecialOrdersFromCache(Constants.SVBoardContext);
         }
         
         // qi board
         if (config.qi_refresh_schedule[dayOfTheWeek])
         {
+            Monitor.Log("SOD Reroll: Qi");
             RerollManager.Get().Reroll(Constants.QiBoardContext);
         }
         else
         {
+            Monitor.Log("No SOD Reroll: Qi");
             RerollManager.Get().ReloadSpecialOrdersFromCache(Constants.QiBoardContext);
         }
         
@@ -108,7 +116,7 @@ public class ModEntry : Mod
         
         if (config.resetRerollsKeybind.IsDown())
         {
-            Monitor.Log("Host Resetting Reroll With Keybind", LogLevel.Debug);
+            Monitor.Log("Host Resetting Reroll With Keybind");
             RerollManager.Get().ResetRerolls();
         }
     }
@@ -127,14 +135,10 @@ public class ModEntry : Mod
 
         if (args.NewMenu is SpecialOrdersBoard)
         {
-            Monitor.Log("New Menu is a special orders board... replacing with custom one", LogLevel.Debug);
-            string orderType = (args.NewMenu as SpecialOrdersBoard).GetOrderType();
-            Game1.activeClickableMenu = new BetterSpecialOrdersBoard(orderType)
+            Monitor.Log("New Menu is a special orders board... replacing with custom one");
+            Game1.activeClickableMenu = new BetterSpecialOrdersBoard(args.NewMenu as SpecialOrdersBoard)
             {
-                behaviorBeforeCleanup = delegate
-                {
-                    Game1.player.team.ordersBoardMutex.ReleaseLock();
-                }
+                behaviorBeforeCleanup = args.NewMenu.behaviorBeforeCleanup
             };
         }
     }
@@ -153,10 +157,11 @@ public class ModEntry : Mod
         }
     }
 
-    private void OnGMCMUpdated()
+    private static void OnGMCMUpdated()
     {
         if (Context.IsMainPlayer)
         {
+            GMonitor.Log("Main Player updated Config. Rebuilding board configs");
             RerollManager.Get().RebuildConfig();
         }
     }
@@ -172,19 +177,34 @@ public class ModEntry : Mod
         }
         
         GMCM_API.Register(mod: ModManifest, reset: () => config = new ModConfig(), save: () => Helper.WriteConfig(config));
-        
-        
+
+        RerollScheduleOption opt = new RerollScheduleOption(
+            getValue: () => config.sv_refresh_schedule,
+            setValue: (value) => config.sv_refresh_schedule = value
+        );
+
+        GMCM_API.AddComplexOption(
+            mod: ModManifest,
+            name: () => "Schedule",
+            draw: opt.Draw,
+            height: () => opt.height,
+            beforeMenuOpened: opt.Reset,
+            beforeSave: opt.SaveChanges,
+            afterReset: opt.Reset
+        );
+
+        /*
         // GENERAL
         GMCM_API.AddSectionTitle(
             mod: ModManifest,
             text: () => "General Settings"
         );
-        
+
         GMCM_API.AddParagraph(
             mod: ModManifest,
             text: () => "All of these settings only need to be set by the host. All joining farmers will use the host's settings"
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Use unseeded random generator",
@@ -196,7 +216,7 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
+
         GMCM_API.AddKeybindList(
             mod: ModManifest,
             name: () => "Reroll Reset Keybind",
@@ -208,14 +228,14 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
-        
+
+
         // SV
         GMCM_API.AddSectionTitle(
             mod: ModManifest,
             text: () => "Stardew Valley Special Orders Board"
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Allow Rerolls",
@@ -227,7 +247,7 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Infinite Rerolls",
@@ -253,12 +273,12 @@ public class ModEntry : Mod
             min: 1,
             max: 10
         );
-        
+
         GMCM_API.AddParagraph(
             mod: ModManifest,
             text: () => "Refresh Schedule"
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Monday",
@@ -329,14 +349,14 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
-        
+
+
         // Qi
         GMCM_API.AddSectionTitle(
             mod: ModManifest,
             text: () => "Mr. Qi Special Orders Board"
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Allow Rerolls",
@@ -348,7 +368,7 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Infinite Rerolls",
@@ -374,12 +394,12 @@ public class ModEntry : Mod
             min: 1,
             max: 10
         );
-        
+
         GMCM_API.AddParagraph(
             mod: ModManifest,
             text: () => "Refresh Schedule"
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Monday",
@@ -450,14 +470,14 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
-        
+
+
         // Desert Event
         GMCM_API.AddSectionTitle(
             mod: ModManifest,
             text: () => "Desert Festival Special Orders Board"
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Allow Rerolls",
@@ -469,7 +489,7 @@ public class ModEntry : Mod
                 OnGMCMUpdated();
             }
         );
-        
+
         GMCM_API.AddBoolOption(
             mod: ModManifest,
             name: () => "Infinite Rerolls",
@@ -494,6 +514,6 @@ public class ModEntry : Mod
             },
             min: 1,
             max: 10
-        );
+        );*/
     }
 }

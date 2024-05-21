@@ -18,8 +18,8 @@ public class RerollManager
     // Game State
     public IDictionary<string, BoardConfig> LocalBoardConfigs = new Dictionary<string, BoardConfig>();
     public IDictionary<string, int> LocalRerollsRemaining = new Dictionary<string, int>();
-    public NetStringDictionary<BoardConfig, NetRef<BoardConfig>> BoardConfigs = new NetStringDictionary<BoardConfig, NetRef<BoardConfig>>();
-    private readonly NetStringDictionary<int, NetInt> _rerollsRemaining = new NetStringDictionary<int, NetInt>();
+    public Dictionary<string, BoardConfig> BoardConfigs = new Dictionary<string, BoardConfig>();
+    private Dictionary<string, int> RerollsRemaining = new Dictionary<string, int>();
     private int _rerollsToday = 0;
     
     // cache for overriding the Monday reroll if necessary
@@ -49,6 +49,17 @@ public class RerollManager
         
         _lastAvailableSpecialOrders = new List<SpecialOrder>(); // create this to avoid null issue
     }
+
+    public void Tick()
+    {
+        
+        //ModEntry.GMonitor.Log($"Board Configs: {BoardConfigs.Dirty} | Rerolls Remaining: {RerollsRemaining.Dirty}");
+        
+        if (!Context.IsMainPlayer)
+        {
+            return;
+        }
+    }
     
     #region REROLLS
     
@@ -63,13 +74,13 @@ public class RerollManager
     public bool CanReroll(string orderType)
     {
         // if we can't reroll then we can't reroll... duh
-        if (!BoardConfigs[orderType].canReroll.Get())
+        if (!BoardConfigs[orderType].AllowReroll)
         {
             return false;
         }
         
         // if there are no rerolls left and we don't have unlimited
-        if (_rerollsRemaining[orderType] <= 0 && !BoardConfigs[orderType].infiniteRerolls.Get())
+        if (RerollsRemaining[orderType] <= 0 && !BoardConfigs[orderType].InfiniteRerolls)
         {
             return false;
         }
@@ -159,7 +170,7 @@ public class RerollManager
         }
         
         // after reroll complete subtract from available rerolls and notify clients of update to available orders
-        _rerollsRemaining[orderType] -= 1;
+        RerollsRemaining[orderType] -= 1;
         
     }
     
@@ -172,6 +183,7 @@ public class RerollManager
         {
             return;
         }
+        ModEntry.GMonitor.Log("Resetting daily rerolls");
 
         if (resetDayTotal)
         {
@@ -183,12 +195,12 @@ public class RerollManager
             // support custom board types
             foreach (BoardConfig board in BoardConfigs.Values)
             {
-                _rerollsRemaining[orderType] = board.maxRerolls.Get();
+                RerollsRemaining[board.OrderType] = board.MaxRerolls;
             }
         }
         else
         {
-            _rerollsRemaining[orderType] = BoardConfigs[orderType].maxRerolls.Get();
+            RerollsRemaining[orderType] = BoardConfigs[orderType].MaxRerolls;
         }
     }
     
@@ -199,11 +211,11 @@ public class RerollManager
     // Rebuild the config settings from the config file
     public void RebuildConfig()
     {
-        BoardConfigs.Set(LoadBoardConfigs());
-        _rerollsRemaining.Set(LoadDefaultRerollsRemaining());
+        BoardConfigs = LoadBoardConfigs();
+        RerollsRemaining = LoadDefaultRerollsRemaining();
     }
     
-    private IDictionary<string, BoardConfig> LoadBoardConfigs()
+    private Dictionary<string, BoardConfig> LoadBoardConfigs()
     {
         return new Dictionary<string, BoardConfig>()
         {
@@ -237,7 +249,7 @@ public class RerollManager
         };
     }
 
-    private IDictionary<string, int> LoadDefaultRerollsRemaining()
+    private Dictionary<string, int> LoadDefaultRerollsRemaining()
     {
         return new Dictionary<string, int>()
         {

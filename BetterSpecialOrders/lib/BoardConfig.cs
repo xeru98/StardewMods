@@ -2,42 +2,33 @@
 
 namespace BetterSpecialOrders;
 
-public class BoardConfig : INetObject<NetFields>
+public class BoardConfig
 {
-    public NetString boardContext = new NetString("");
-    public NetBool  canReroll = new NetBool(false);
-    public NetBool infiniteRerolls = new NetBool(false);
-    public NetInt maxRerolls = new NetInt(0);
-    private NetArray<bool, NetBool> refreshSchedule = new NetArray<bool, NetBool>(7);
+    public string OrderType = new NetString("");
+    public bool  AllowReroll = new NetBool(false);
+    public bool InfiniteRerolls = new NetBool(false);
+    public int MaxRerolls = new NetInt(0);
+    public bool[] RefreshSchedule = new bool[7];
 
     public NetFields NetFields { get; } = new NetFields("BetterSpecialOrders.BoardConfig");
 
     public BoardConfig()
     {
-        InitializeNetFields();
+        OrderType = "";
+        
     }
 
-    public BoardConfig(string ctx, bool canReroll, bool infiniteRerolls, int maxRerolls, bool[] refreshSchedule)
+    public BoardConfig(string ctx, bool allowReroll, bool infiniteRerolls, int maxRerolls, bool[] refreshSchedule)
     {
-        boardContext.Set(ctx);
-        this.canReroll.Set(canReroll);
-        this.infiniteRerolls.Set(infiniteRerolls);
-        this.maxRerolls.Set(maxRerolls);
-        this.refreshSchedule.Set(refreshSchedule);
+        OrderType = ctx;
+        AllowReroll = allowReroll;
+        InfiniteRerolls = infiniteRerolls;
+        MaxRerolls = maxRerolls;
+        RefreshSchedule = refreshSchedule;
     }
 
     public bool shouldRefreshToday(int dayOfTheWeek)
     {
-        return refreshSchedule[dayOfTheWeek];
-    }
-
-    private void InitializeNetFields()
-    {
-        NetFields.SetOwner(this)
-            .AddField(boardContext, "boardContext")
-            .AddField(canReroll, "canReroll")
-            .AddField(infiniteRerolls, "infiniteRerolls")
-            .AddField(maxRerolls, "maxRerolls")
-            .AddField(refreshSchedule, "refreshSchedule");
+        return RefreshSchedule[dayOfTheWeek];
     }
 }

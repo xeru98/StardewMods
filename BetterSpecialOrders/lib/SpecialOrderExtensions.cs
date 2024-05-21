@@ -1,4 +1,5 @@
-﻿using StardewValley;
+﻿using StardewModdingAPI;
+using StardewValley;
 using StardewValley.GameData.SpecialOrders;
 using StardewValley.SpecialOrders;
 
@@ -43,5 +44,35 @@ public static class SpecialOrderExtensions
     public static void SetHardOrderDuration(this SpecialOrder order)
     {
         order.SetHardOrderDuration(order.questDuration.Get());
+    }
+
+    /*
+     * This is a modified version of the base FarmerTeam::AddSpecialOrder
+     *  that used the custom duration for the mod instead of the default that
+     *  comes when normally making the order.
+     */
+    public static void AddSpecialOrderWithModdedDuration(this FarmerTeam team, string id, int? generationSeed = null,
+        bool forceRepeatable = false)
+    {
+        if (team.specialOrders.Any((SpecialOrder p) => p.questKey == id))
+        {
+            return;
+        }
+        SpecialOrder order = SpecialOrder.GetSpecialOrder(id, generationSeed);
+        order.SetHardOrderDuration();
+        if (order == null)
+        {
+            ModEntry.GMonitor.Log("Can't add special order with ID '" + id + "' because no such ID was found.", LogLevel.Warn);
+            return;
+        }
+        if (team.completedSpecialOrders.Contains(order.questKey.Value) && !forceRepeatable)
+        {
+            SpecialOrderData data = order.GetData();
+            if (data == null || !data.Repeatable)
+            {
+                return;
+            }
+        }
+        team.specialOrders.Add(order);
     }
 }
