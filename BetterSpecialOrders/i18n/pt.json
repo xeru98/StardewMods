@@ -1,0 +1,25 @@
+﻿{
+	
+  "settings.general.header": "Configurações Gerais",
+  "settings.general.description": "Todas essas configurações precisam ser definidas apenas pelo host. Todos os fazendeiros que se juntarem usarão as configurações do host",
+  "settings.general.true-random.label": "Usar gerador aleatório sem semente",
+  "settings.general.true-random.tooltip": "Quando desmarcado, o randomizador usará um gerador pseudorrandômico com semente. Quando marcado, usará um gerador aleatório sem semente.",
+  "settings.general.reset-keybind.label": "Tecla de Redefinição de Reroll",
+  "settings.general.reset-keybind.tooltip": "Permite que o host redefina o número de rerolls disponíveis de volta ao seu valor máximo",
+  "settings.general.force-unique.label": "Forçar Ordens Únicas",
+  "settings.general.force-unique.tooltip": "Quando possível, garantirá que nenhuma das novas opções seja a mesma das opções anteriores.",
+  "settings.board.header": "Configurações Individuais de Quadros de Ordem Especial",
+  "settings.board.description1": "Essas configurações são páginas para quadros individuais com base nos mods que você carregou.",
+  "settings.board.description2": "Por padrão, os rerolls estão desativados e são atualizados todas as segundas-feiras.",
+  "settings.board.allow-reroll.label": "Permitir Rerolls",
+  "settings.board.allow-reroll.tooltip": "Quando marcado, permite que este quadro seja rerolado",
+  "settings.board.infinite-rerolls.label": "Rerolls Infinitos",
+  "settings.board.infinite-rerolls.tooltip": "Quando marcado, permite que este quadro seja rerolado infinitamente",
+  "settings.board.max-rerolls.label": "Máximo de Rerolls Diários",
+  "settings.board.max-rerolls.tooltip": "O número de rerolls diários que a equipe compartilha por dia para este quadro",
+  "settings.board.schedule.label": "Agenda de Reroll",
+  "settings.board.schedule.tooltip": "Este quadro será automaticamente rerolado no início de todos os dias marcados",
+  "board.reroll": "Reroll",
+  "board.rerolls": "Rerolls: {{amount}}"
+
+}

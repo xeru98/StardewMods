@@ -18,16 +18,8 @@ public class ModEntry : Mod
 
     private ModConfig config
     {
-        get { return RerollManager.Get().config; }
-        set { RerollManager.Get().config = value;  }
+        get { return RerollManager.Get().GetActiveConfig(); }
     }
-    
-    /* #TODO
-     * 1) test menu options
-     * 2) test reroll
-     * 3) add multiplayer replication messages
-     * 4) test ridgeside compatibility
-     */
     
     public override void Entry(IModHelper helper)
     {
@@ -35,32 +27,30 @@ public class ModEntry : Mod
         GMonitor = Monitor;
         GManifest = ModManifest;
         ModID = ModManifest.UniqueID;
+        I18n.Init(helper.Translation);
         RerollManager.Get(); // init the game state since the monitor and helper now exist
 
         // hook up events
         helper.Events.GameLoop.GameLaunched += Lifecycle_OnGameLaunch;
         helper.Events.GameLoop.DayEnding += Lifecycle_OnDayEnd;
         helper.Events.GameLoop.DayStarted += Lifecycle_OnDayStart;
-        helper.Events.GameLoop.UpdateTicked += Lifecycle_OnUpdateTicked;
         helper.Events.Input.ButtonsChanged += Input_OnButtonsChanged;
         helper.Events.Display.MenuChanged += Display_OnMenuChanged;
+        helper.Events.Multiplayer.PeerConnected += Multiplayer_OnPeerConnected;
         helper.Events.Multiplayer.ModMessageReceived += Multiplayer_OnMessageRecieved;
         
         Monitor.Log("Mod Loaded");
     }
     
+    #region Game Loop
+
     // Called when the game is launched and sets up the GMCM integration if found
-    internal void Lifecycle_OnGameLaunch(object? sender, GameLaunchedEventArgs args)
+    private void Lifecycle_OnGameLaunch(object? sender, GameLaunchedEventArgs args)
     {
         GMCMHelpers.SetupGMCM();
     }
-
-    internal void Lifecycle_OnUpdateTicked(object? sender, UpdateTickedEventArgs args)
-    {
-        RerollManager.Get().Tick();
-    }
     
-    internal void Lifecycle_OnDayEnd(object? sendex, DayEndingEventArgs args)
+    private void Lifecycle_OnDayEnd(object? sender, DayEndingEventArgs args)
     {
         if (!Context.IsMainPlayer)
         {
@@ -70,7 +60,7 @@ public class ModEntry : Mod
         RerollManager.Get().CacheCurrentAvailableSpecialOrders();
     }
 
-    internal void Lifecycle_OnDayStart(object? sender, DayStartedEventArgs args)
+    private void Lifecycle_OnDayStart(object? sender, DayStartedEventArgs args)
     {
         if (!Context.IsMainPlayer)
         {
@@ -82,15 +72,15 @@ public class ModEntry : Mod
 
         foreach (BoardConfig boardConfig in config.BoardConfigs.Values)
         {
-            if (boardConfig.shouldRefreshToday(dayOfTheWeek))
+            if (boardConfig.ShouldRefreshToday(dayOfTheWeek))
             {
                 Monitor.Log($"Daily Refresh: {boardConfig.OrderType}");
-                RerollManager.Get().Reroll(Constants.SVBoardContext);
+                RerollManager.Get().Reroll(boardConfig.OrderType);
             }
             else
             {
                 Monitor.Log($"Daily Refresh... loading from cache: {boardConfig.OrderType}");
-                RerollManager.Get().ReloadSpecialOrdersFromCache(Constants.SVBoardContext);
+                RerollManager.Get().ReloadSpecialOrdersFromCache(boardConfig.OrderType);
             }
         }
 
@@ -99,10 +89,12 @@ public class ModEntry : Mod
         RerollManager.Get().ResetRerolls(resetDayTotal: true);
     }
 
+    #endregion
     
+    #region Input
 
     // Triggered when the buttons are changed
-    internal void Input_OnButtonsChanged(object? sender, ButtonsChangedEventArgs args)
+    private void Input_OnButtonsChanged(object? sender, ButtonsChangedEventArgs args)
     {
         // only the host can trigger a reset
         if (!Context.IsMainPlayer)
@@ -116,8 +108,12 @@ public class ModEntry : Mod
             RerollManager.Get().ResetRerolls();
         }
     }
+    
+    #endregion
 
-    internal void Display_OnMenuChanged(object? sender, MenuChangedEventArgs args)
+    #region Display
+
+    private void Display_OnMenuChanged(object? sender, MenuChangedEventArgs args)
     {
         if (!Context.IsWorldReady)
         {
@@ -132,33 +128,69 @@ public class ModEntry : Mod
         if (args.NewMenu is SpecialOrdersBoard)
         {
             Monitor.Log("New Menu is a special orders board... replacing with custom one");
-            Game1.activeClickableMenu = new BetterSpecialOrdersBoard(args.NewMenu as SpecialOrdersBoard)
+            Game1.activeClickableMenu = new BetterSpecialOrdersBoard((args.NewMenu as SpecialOrdersBoard)!)
             {
                 behaviorBeforeCleanup = args.NewMenu.behaviorBeforeCleanup
             };
         }
     }
+    
+    #endregion
 
-    internal void Multiplayer_OnMessageRecieved(object? sender, ModMessageReceivedEventArgs args)
+    #region Multiplayer
+    
+    private void Multiplayer_OnPeerConnected(object? sender, PeerConnectedEventArgs args)
+    {
+        // peer connection sync only initiated by host
+        if (!Context.IsMainPlayer)
+        {
+            return;
+        }
+        
+        RerollManager.Get().Sync_HostConfig(args.Peer.PlayerID);
+        RerollManager.Get().Sync_RerollsRemaining(args.Peer.PlayerID);
+    }
+    
+    private void Multiplayer_OnMessageRecieved(object? sender, ModMessageReceivedEventArgs args)
     {
         if (args.FromModID != ModID)
         {
             return;
         }
-        
-        if (args.Type == Constants.REQUEST_REROLL)
+
+        // main player listens for reroll requests
+        if (Context.IsMainPlayer)
         {
-            RequestReroll msg = args.ReadAs<RequestReroll>();
-            RerollManager.Get().Reroll(msg.orderType);
+            Monitor.Log($"Message recieved by host: {args.Type}");
+            if (args.Type == Constants.REQUEST_REROLL)
+            {
+                RequestReroll msg = args.ReadAs<RequestReroll>();
+                RerollManager.Get().Reroll(msg.orderType);
+            }
+        }
+
+        // peers listen for updates
+        if (args.FromPlayerID == Game1.MasterPlayer.UniqueMultiplayerID)
+        {
+            Monitor.Log($"Message recieved from host: {args.Type}");
+            if (args.Type == Constants.REP_HOST_CONFIG)
+            {
+                RerollManager.Get().OnRep_HostConfig(args.ReadAs<RepHostConfig>());
+            } else if (args.Type == Constants.REP_REROLLS_REMAINING)
+            {
+                RerollManager.Get().OnRep_RerollsRemaining(args.ReadAs<RepRerollsRemaining>());
+            }
         }
     }
+    
+    #endregion
 
     public static void OnGMCMFieldChanged(string fieldId, object newValue)
     {
-        if (Context.IsMainPlayer)
+        if (!Context.IsMainPlayer)
         {
-            GMonitor.Log("Main Player updated Config. Rebuilding board configs");
-            RerollManager.Get().RebuildConfig();
+            GMonitor!.Log("Main Player updated Config. Rebuilding board configs");
+            RerollManager.Get().RebuildGameState();
         }
     }
 }

@@ -54,7 +54,7 @@ public static class SpecialOrderExtensions
     public static void AddSpecialOrderWithModdedDuration(this FarmerTeam team, string id, int? generationSeed = null,
         bool forceRepeatable = false)
     {
-        if (team.specialOrders.Any((SpecialOrder p) => p.questKey == id))
+        if (team.specialOrders.Any((SpecialOrder p) => p.questKey.Value == id))
         {
             return;
         }
@@ -62,7 +62,7 @@ public static class SpecialOrderExtensions
         order.SetHardOrderDuration();
         if (order == null)
         {
-            ModEntry.GMonitor.Log("Can't add special order with ID '" + id + "' because no such ID was found.", LogLevel.Warn);
+            ModEntry.GMonitor!.Log("Can't add special order with ID '" + id + "' because no such ID was found.", LogLevel.Warn);
             return;
         }
         if (team.completedSpecialOrders.Contains(order.questKey.Value) && !forceRepeatable)
