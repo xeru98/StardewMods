@@ -1,0 +1,11 @@
+{
+  "Name": "Iridium Fish Smoker [Content Patcher]",
+  "Author": "Xeru",
+  "Version": "0.0.1",
+  "Description": "Adds sprite and crafting recipe for iridium fish smoker",
+  "UniqueID": "Xeru.IridiumFishSmokerCP",
+  "UpdateKeys": [],
+  "ContentPackFor": {
+    "UniqueID": "Pathoschild.ContentPatcher"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "Format": "2.1.0",
+  "Changes": [
+    {
+      "Action": "EditData",
+      "Target": "Data/Machines",
+      "Entries": {
+        "(BC){{ModId}}_IridiumFishSmoker": {
+          "HasInput": false,
+          "HasOutput": false,
+          "InteractionMethod": null,
+          "OutputRules": [
+            {
+              "Id": "Default",
+              "Triggers": [
+                {
+                  "Id": "ItemPlacesInMachine",
+                  "Trigger": "ItemPlacesInMachine",
+                  "RequiredItemId": null,
+                  "RequiredTags": [
+                    "category_fish"
+                  ],
+                  "RequiredCount": 1,
+                  "Condition": null
+                }
+              ],
+              "UseFirstValidOutput": false,
+              "OutputItem": [
+                {
+                  "CustomData": null,
+                  "OutputMethod": null,
+                  "CopyColor": null,
+                  "Id": "FLAVORED_ITEM SmokedFish DROP_IN_ID"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
