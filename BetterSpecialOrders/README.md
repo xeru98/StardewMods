@@ -30,6 +30,11 @@ a bug report and I'll investigate adding it.
 - SVE Boards
 - Ridgeside Village Boards
 
+## Translations
+- English: Xeru98
+- Chinese (Mandarin): Ctwn17
+- Portuguese: Maatsuki
+
 ## FAQ
 ### **I'm playing solo and I can't see the reroll button**
 Check your config to make sure you have Allow Rerolls checked for the board you have opened
