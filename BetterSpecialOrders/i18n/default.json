@@ -18,6 +18,12 @@
   "settings.board.max-rerolls.tooltip": "The number of daily rerolls the team has shared across them per day for this board",
   "settings.board.schedule.label": "Reroll Schedule",
   "settings.board.schedule.tooltip": "This board will automatically reroll at the start of all checked days",
+  "settings.credits.header": "Credits",
+  "settings.credits.programming": "Programming",
+  "settings.credits.translations.header": "Translations",
+  "settings.credits.translations.english":  "English",
+  "settings.credits.translations.portuguese": "Portuguese",
+  "settings.credits.translations.mandarin": "Chinese (Mandarin)",
   "board.reroll": "Reroll",
   "board.rerolls": "Rerolls: {{amount}}"
 }

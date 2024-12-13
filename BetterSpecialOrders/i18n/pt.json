@@ -18,6 +18,12 @@
   "settings.board.max-rerolls.label": "Máximo de Rerolls Diários",
   "settings.board.max-rerolls.tooltip": "O número de rerolls diários que a equipe compartilha por dia para este quadro",
   "settings.board.schedule.label": "Agenda de Reroll",
+  "settings.credits.header": "Créditos",
+  "settings.credits.programming": "Programação",
+  "settings.credits.translations.header": "Traduções",
+  "settings.credits.translations.english":  "Inglês",
+  "settings.credits.translations.portuguese": "Português",
+  "settings.credits.translations.mandarin": "Chinês (Mandarin)",
   "settings.board.schedule.tooltip": "Este quadro será automaticamente rerolado no início de todos os dias marcados",
   "board.reroll": "Reroll",
   "board.rerolls": "Rerolls: {{amount}}"
