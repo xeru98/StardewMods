@@ -8,37 +8,31 @@ public class ModConfig
     public KeybindList resetRerollsKeybind = new KeybindList();
 
     public bool useTrueRandom = false;
-    
-    /** STARDEW VALLEY SPECIAL ORDERS **/
-    
-    // Flags for which days the board should auto refresh
-    public bool[] sv_refresh_schedule = new bool[7] {true, false, false, false, false, false, false};
 
-    // If true then the player can reroll sv_rerollCount times
-    public bool sv_allowReroll = false;
-    public bool sv_infiniteReroll = false;
+    public bool forceUniqueIfPossible = true;
 
-    public int sv_maxRerollCount = 1;
-    
-
-    /** QI QUESTS **/
-    // Flags for which days the board should auto refresh
-    public bool[] qi_refresh_schedule = new bool[7] {true, false, false, false, false, false, false};
-
-    // If true then the player can reroll qi_rerollCount times
-    public bool qi_allowReroll = false;
-    public bool qi_infiniteReroll = false;
-
-    public int qi_maxRerollCount = 1;
-    
-
-    /** DESERT EVENT QUESTS **/
-    public bool de_allowReroll = false;
-    public bool de_infiniteReroll = false;
-
-    public int de_maxRerollCount = 1;
-    
+    // Allows each client ot use their own settings
+    public bool allowLocalControl = false;
 
     
+    // Lookup table that uses the configID (not the ordertype in case they conflict) as the key
+    public Dictionary<string, BoardConfig> BoardConfigs = new Dictionary<string, BoardConfig>()
+    {
+        // vanilla
+        {Constants.ConfigKeys.SV, new BoardConfig(Constants.OrderTypes.SV)},
+        {Constants.ConfigKeys.Qi, new BoardConfig(Constants.OrderTypes.Qi)},
+        {Constants.ConfigKeys.DesertFestival, new BoardConfig(Constants.OrderTypes.DesertFestival, new bool[]{true, true, true, true, true, true, true})},
+        
+        // MODS
+        // Ridgeside Village
+        {Constants.ConfigKeys.RSVTown, new BoardConfig(Constants.OrderTypes.RSVTown)},
+        {Constants.ConfigKeys.RSVNinja, new BoardConfig(Constants.OrderTypes.RSVNinja)},
+        
+        // Mt. Vapius
+        {Constants.ConfigKeys.MtVapius, new BoardConfig(Constants.OrderTypes.MtVapius)},
+        
+        // All other custom boards
+        {Constants.ConfigKeys.Custom, new BoardConfig(Constants.OrderTypes.Custom)},
+    };
     
 }

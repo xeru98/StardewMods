@@ -2,42 +2,39 @@
 
 namespace BetterSpecialOrders;
 
-public class BoardConfig : INetObject<NetFields>
+public class BoardConfig
 {
-    public NetString boardContext = new NetString("");
-    public NetBool  canReroll = new NetBool(false);
-    public NetBool infiniteRerolls = new NetBool(false);
-    public NetInt maxRerolls = new NetInt(0);
-    private NetArray<bool, NetBool> refreshSchedule = new NetArray<bool, NetBool>(7);
-
-    public NetFields NetFields { get; } = new NetFields("BetterSpecialOrders.BoardConfig");
+    public string OrderType = "";
+    public bool  AllowReroll = false;
+    public bool InfiniteRerolls = false;
+    public int MaxRerolls = 1;
+    public bool[] RefreshSchedule = new bool[7]{true, false, false, false, false, false, false};
 
     public BoardConfig()
     {
-        InitializeNetFields();
+
     }
 
-    public BoardConfig(string ctx, bool canReroll, bool infiniteRerolls, int maxRerolls, bool[] refreshSchedule)
+    public BoardConfig(string orderType, bool[]? refreshSchedule = null)
     {
-        boardContext.Set(ctx);
-        this.canReroll.Set(canReroll);
-        this.infiniteRerolls.Set(infiniteRerolls);
-        this.maxRerolls.Set(maxRerolls);
-        this.refreshSchedule.Set(refreshSchedule);
+        OrderType = orderType;
+        if (refreshSchedule != null)
+        {
+            RefreshSchedule = refreshSchedule;
+        }
     }
 
-    public bool shouldRefreshToday(int dayOfTheWeek)
+    public BoardConfig(string ctx, bool allowReroll, bool infiniteRerolls, int maxRerolls, bool[] refreshSchedule)
     {
-        return refreshSchedule[dayOfTheWeek];
+        OrderType = ctx;
+        AllowReroll = allowReroll;
+        InfiniteRerolls = infiniteRerolls;
+        MaxRerolls = maxRerolls;
+        RefreshSchedule = refreshSchedule;
     }
 
-    private void InitializeNetFields()
+    public bool ShouldRefreshToday(int dayOfTheWeek)
     {
-        NetFields.SetOwner(this)
-            .AddField(boardContext, "boardContext")
-            .AddField(canReroll, "canReroll")
-            .AddField(infiniteRerolls, "infiniteRerolls")
-            .AddField(maxRerolls, "maxRerolls")
-            .AddField(refreshSchedule, "refreshSchedule");
+        return RefreshSchedule[dayOfTheWeek];
     }
 }

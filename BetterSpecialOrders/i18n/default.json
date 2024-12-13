@@ -1,0 +1,23 @@
+﻿{
+  "settings.general.header": "General Settings",
+  "settings.general.description": "All of these settings only need to be set by the host. All joining farmers will use the host's settings",
+  "settings.general.true-random.label": "Use unseeded random generator",
+  "settings.general.true-random.tooltip": "When unchecked, randomizer will use seeded pseudorandom generator. When checked will use unseeded random generator.",
+  "settings.general.reset-keybind.label": "Reroll Reset Keybind",
+  "settings.general.reset-keybind.tooltip": "Allows the host to reset the number of available rerolls back to their max amount",
+  "settings.general.force-unique.label": "Force Unique Orders",
+  "settings.general.force-unique.tooltip": "When possible, will guarantee that as none of the new options are the previous options.",
+  "settings.board.header": "Individual Special Order Board Configs",
+  "settings.board.description1": "These settings are pages for individual boards based on mods you have loaded.",
+  "settings.board.description2": "By default, rerolls are disabled and they refresh every Monday.",
+  "settings.board.allow-reroll.label": "Allow Rerolls",
+  "settings.board.allow-reroll.tooltip": "When checked, allows this board to be rerolled",
+  "settings.board.infinite-rerolls.label": "Infinite Rerolls",
+  "settings.board.infinite-rerolls.tooltip": "When checked, allows this board to be rerolled infinitely",
+  "settings.board.max-rerolls.label": "Max Daily Rerolls",
+  "settings.board.max-rerolls.tooltip": "The number of daily rerolls the team has shared across them per day for this board",
+  "settings.board.schedule.label": "Reroll Schedule",
+  "settings.board.schedule.tooltip": "This board will automatically reroll at the start of all checked days",
+  "board.reroll": "Reroll",
+  "board.rerolls": "Rerolls: {{amount}}"
+}
