@@ -1,11 +1,21 @@
 ﻿using BetterSpecialOrders.Menus;
 using GenericModConfigMenu;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
+using StardewValley;
 
 namespace BetterSpecialOrders;
 
 public static class GMCMHelpers
 {
+    private static readonly Dictionary<Func<string>, string> TRANSLATIONS = new Dictionary<Func<string>, string>()
+    {
+        {I18n.Settings_Credits_Translations_English, "Xeru98"},
+        {I18n.Settings_Credits_Translations_Mandarin, "Ctwn17 (Kitto)"},
+        {I18n.Settings_Credits_Translations_Portuguese, "Maatsuki"}
+    };
+    
     private struct GMCM_PageConfig
     {
         public string name;
@@ -202,6 +212,12 @@ public static class GMCMHelpers
             }
         }
         
+        GMCM.AddPageLink(
+            mod: ModEntry.GManifest!,
+            pageId: "credits",
+            text: I18n.Settings_Credits_Header
+            );
+        
         foreach (GMCM_PageConfig pageConfig in PageConfigs)
         {
             if (pageConfig.allRequiredIdsFound())
@@ -210,5 +226,48 @@ public static class GMCMHelpers
             }
         }
         
+        // Begin Credits
+        GMCM.AddPage(
+            mod: ModEntry.GManifest!,
+            pageId: "credits",
+            pageTitle: I18n.Settings_Credits_Header
+        );
+        
+        GMCM.AddSectionTitle(
+            mod: ModEntry.GManifest!,
+            text: I18n.Settings_Credits_Programming
+        );
+        GMCM.AddComplexOption(
+            mod: ModEntry.GManifest!,
+            name: () => "Xeru98",
+            tooltip: null,
+            fieldId: null,
+            draw: (SpriteBatch beforeSave, Vector2 v) => { },
+            height: null,
+            beforeMenuOpened: null,
+            beforeSave: null,
+            afterReset: null
+        );
+        GMCM.AddSectionTitle(
+            mod: ModEntry.GManifest!,
+            text: I18n.Settings_Credits_Translations_Header
+        );
+        foreach(KeyValuePair<Func<string>, string> translator in TRANSLATIONS)
+        {
+            GMCM.AddComplexOption(
+                mod: ModEntry.GManifest!,
+                name: translator.Key,
+                tooltip: null,
+                fieldId: null,
+                draw: (SpriteBatch b, Vector2 v) =>
+                {
+                    Utility.drawTextWithShadow(b, translator.Value, Game1.dialogueFont, v, Color.Black);
+                },
+                height: null,
+                beforeMenuOpened: null,
+                beforeSave: null,
+                afterReset: null
+            );
+        }
     }
 }
