@@ -1,0 +1,10 @@
+{
+  "settings.max-forge-upgrades.label": "Max Forge Upgrades",
+  "settings.max-forge-upgrades.tooltip": "Sets the maximum number of times a weapon can be upgraded at the forge. (Vanilla 3)",
+  "settings.max-forge-per-gem.label": "Max Forge Level Per Gem Type",
+  "settings.max-forge-per-gem.tooltip": "Sets the maximum number of times a weapon can be upgraded at the forge with a game of the same type. (Vanilla 3)",
+  "settings.cinder-shards.base.label": "Base Upgrade Cost",
+  "settings.cinder-shards.base.tooltip": "Sets the base number of cinder shards to upgrade a weapon. (Vanilla 10)",
+  "settings.cinder-shards.scaling.label": "Upgrade Scaling Amount",
+  "settings.cinder-shards.scaling.tooltip": "Sets the number of additional cinder shards required per level to upgrade. (Vanilla 5)"
+}

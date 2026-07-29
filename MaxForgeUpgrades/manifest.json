@@ -1,0 +1,9 @@
+{
+  "Name": "Max Forge Upgrades",
+  "Author": "Xeru",
+  "Version": "1.1.0",
+  "Description": "Allows players to change the number of times their weapon can be upgraded with the forge",
+  "UniqueID": "xeru.MaxForgeUpgrades",
+  "EntryDll": "MaxForgeUpgrades.dll",
+  "UpdateKeys": [ "Nexus:49731" ]
+}

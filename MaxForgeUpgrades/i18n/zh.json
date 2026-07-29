@@ -1,0 +1,10 @@
+﻿{
+  "settings.max-forge-upgrades.label": "最大熔炉升级次数",
+  "settings.max-forge-upgrades.tooltip": "设置武器在熔炉中可升级的最大次数. (原版为3次)",
+  "settings.max-forge-per-gem.label": "每种宝石类型的最大熔炉等级",
+  "settings.max-forge-per-gem.tooltip": "设置使用同种宝石在熔炉中升级武器的最大次数. (原版为3次)",
+  "settings.cinder-shards.base.label": "基础升级费用",
+  "settings.cinder-shards.base.tooltip": "设置升级武器所需的火山晶石基础数量. (原版为10个)",
+  "settings.cinder-shards.scaling.label": "升级递增数量",
+  "settings.cinder-shards.scaling.tooltip": "设置每升一级需要的火山晶石数量. (原版为5个)"
+}
