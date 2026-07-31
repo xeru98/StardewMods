@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <ModFolderName>[CP] StreamerMode</ModFolderName>
+        <EnableModDeploy>false</EnableModDeploy>
+        <EnableModZip>false</EnableModZip>
+        <EnableGameDebugging>false</EnableGameDebugging>
+        <RootNamespace>CP_StreamerMode</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.4.0" />
+    </ItemGroup>
+
+    <!-- Copy the content pack into the game's Mods folder after each build. $(GameModsPath) is provided by ModBuildConfig (auto-detected game path + \Mods). -->
+    <Target Name="DeployContentPack" AfterTargets="Build">
+        <ItemGroup>
+            <ContentPackFiles Include="$(ModFolderName)\**\*" />
+        </ItemGroup>
+        <Copy SourceFiles="@(ContentPackFiles)"
+              DestinationFiles="@(ContentPackFiles->'$(GameModsPath)\$(ModFolderName)\%(RecursiveDir)%(Filename)%(Extension)')"
+              SkipUnchangedFiles="false" />
+        <Message Importance="high" Text="Deployed content pack to $(GameModsPath)\$(ModFolderName)" />
+    </Target>
+
+    <!-- Read the version out of the content pack's manifest.json (used for the zip name). -->
+    <Target Name="ReadModVersion">
+        <PropertyGroup>
+            <ModVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\$(ModFolderName)\manifest.json')), '"Version"\s*:\s*"([^"]*)"').Groups[1].Value)</ModVersion>
+        </PropertyGroup>
+    </Target>
+
+    <!-- Build a Nexus-style release zip: "<ModFolderName> <Version>.zip" in $(TargetDir),
+         containing a single top-level "<ModFolderName>" folder. -->
+    <Target Name="ZipContentPack" AfterTargets="Build" DependsOnTargets="ReadModVersion">
+        <PropertyGroup>
+            <ZipStageDir>$(IntermediateOutputPath)modzip</ZipStageDir>
+            <ZipFilePath>$(TargetDir)$(ModFolderName) $(ModVersion).zip</ZipFilePath>
+        </PropertyGroup>
+        <ItemGroup>
+            <ContentPackFiles Include="$(ModFolderName)\**\*" />
+        </ItemGroup>
+        <RemoveDir Directories="$(ZipStageDir)" />
+        <Copy SourceFiles="@(ContentPackFiles)"
+              DestinationFiles="@(ContentPackFiles->'$(ZipStageDir)\$(ModFolderName)\%(RecursiveDir)%(Filename)%(Extension)')" />
+        <Delete Files="$(ZipFilePath)" />
+        <ZipDirectory SourceDirectory="$(ZipStageDir)" DestinationFile="$(ZipFilePath)" />
+        <Message Importance="high" Text="Zipped content pack to $(ZipFilePath)" />
+    </Target>
+
+</Project>

@@ -1,0 +1,11 @@
+{
+  "Name": "Streamer Mode",
+  "Author": "Xeru",
+  "Version": "1.0.0",
+  "Description": "Hides the platform username of users joining the server",
+  "UniqueID": "xeru.StreamerMode",
+  "UpdateKeys": [ "Nexus:49959" ],
+  "ContentPackFor": {
+    "UniqueID": "Pathoschild.ContentPatcher"
+  }
+}
